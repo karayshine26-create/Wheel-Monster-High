@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster High OC Randomizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;700&display=swap');
+        body { font-family: 'Mitr', sans-serif; background: radial-gradient(circle, #1a0b2e 0%, #05010d 100%); }
+        .neon-border { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4); }
+        .neon-text { text-shadow: 0 0 12px rgba(236, 72, 153, 0.8); }
+        .magic-beam { position: absolute; width: 6px; height: 150px; border-radius: 50%; opacity: 0; pointer-events: none; }
+        @keyframes beamCollapse {
+            0% { opacity: 1; transform: rotate(var(--rotation)) translateY(-350px) scaleY(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: rotate(var(--rotation)) translateY(0px) scaleY(0.1); }
+        }
+        #fade-screen { transition: opacity 0.5s ease; }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div id="fade-screen" class="fixed inset-0 bg-black opacity-0 z-[60] pointer-events-none"></div>
+    <div id="magic-container" class="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"></div>
+
+    <div id="home-screen" class="w-full max-w-md flex flex-col items-center text-center transition-all duration-500">
+        <h1 class="text-3xl font-bold text-pink-500 uppercase tracking-widest neon-text mb-8">⚡ MONSTER HIGH ⚡</h1>
+        <div class="cursor-pointer transition-transform hover:scale-105" onclick="triggerMagic()">
+            <img src="ดาวน์โหลด.png" alt="Coffin" class="w-64">
+        </div>
+    </div>
+
+    <div id="result-screen" class="w-full max-w-2xl bg-gray-900/90 border-2 border-pink-500 rounded-3xl p-6 sm:p-8 backdrop-blur-md neon-border hidden opacity-0 transition-all duration-700">
+        <div class="text-center mb-6"><h2 class="text-2xl font-bold text-pink-500 uppercase neon-text">⚡ มอนสเตอร์ของคุณ ⚡</h2></div>
+        
+        <div class="space-y-3.5">
+            <div id="res-fields"></div>
+            <div class="bg-purple-950/30 p-4 rounded-xl border border-purple-500/20">
+                <span class="text-pink-400 font-bold block mb-2">🎀 เครื่องประดับ (2 อย่าง):</span>
+                <div id="res-acc" class="text-gray-100 font-medium space-y-1"></div>
+            </div>
+            <div id="res-palette-container" class="bg-purple-950/30 p-3.5 rounded-xl border border-purple-500/20"></div>
+        </div>
+
+        <div class="mt-6 text-center flex gap-3 justify-center">
+            <button onclick="backToHome()" class="px-6 py-2 border border-purple-500 rounded-full text-gray-300 hover:bg-gray-800">↩️ กลับ</button>
+            <button onclick="triggerMagic()" class="px-6 py-2 bg-pink-600 rounded-full text-white font-bold hover:bg-pink-700">🔮 สุ่มใหม่ 🔮</button>
+        </div>
+    </div>
+
+    <script>
+        const speciesList = ["Vampire (แวมไพร์)", "Werewolf (มนุษย์หมาป่า)", "Werecat (มนุษย์แมว)", "Zombie (ซอมบี้)", "Ghost (ผี)", "Mummy (มัมมี่)", "Sea Monster (สัตว์ประหลาดทะเล)", "Gorgon (กอร์กอน)", "Frankenmonster (สิ่งมีชีวิตเย็บต่อร่าง)", "Robot (หุ่นยนต์)", "Yeti (เยติ)", "Bigfoot (บิ๊กฟุต)", "Gargoyle (การ์กอยล์)", "Werebear (มนุษย์หมี)", "Wererat (มนุษย์หนู)", "Dullahan (ผีหัวขาด)", "Dragon (มังกร)", "Genie (จินนี่)", "Minotaur (มิโนทอร์)", "Centaur (เซนทอร์)", "Harpy (ฮาร์ปี)", "Cyclops (ยักษ์ตาเดียว)", "Ogre (ยักษ์โอเกอร์)", "Troll (โทรลล์)", "Banshee (แบนชี)", "Grim Reaper (ยมทูต)", "Boogey Monster (มอนสเตอร์ใต้เตียง)", "Skeleton (โครงกระดูก)", "Elf (เอลฟ์)", "Leprechaun (เลเปรคอน)", "Cupid (เทพแห่งความรัก)", "Naga (นาค)", "Voodoo Doll (ตุ๊กตาวูดู)", "Arachne (มนุษย์แมงมุม)", "Moth Monster (มนุษย์ผีเสื้อ)", "Deer Spirit (วิญญาณกวาง)", "Kitsune (มนุษย์จิ้งจอก)", "Krampus (แครมปัส)", "Witch (แม่มด)", "Wizard (พ่อมด)", "Goblin (ก็อบลิน)", "Orc (ออร์ค)", "Gremlin (เกรมลิน)", "Golem (โกเล็ม)", "Selkie (เซลกี)", "Kappa (กัปปะ)", "Chupacabra (ชูปาคาบรา)", "Drop Bear (ดรอปแบร์)", "Jackalope (แจ็กคาโลป)", "Sphinx (สฟิงซ์)", "Anubis Monster (มนุษย์หัวชาคอล)", "Fire Elemental (ธาตุไฟ)", "Plant Monster (มนุษย์ต้นไม้)", "Tree Nymph (พรายต้นไม้)", "Bee Monster (มนุษย์ผึ้ง)", "Kraken (คราเคน)", "Slime Monster (อสูรกายเมือก)", "Shadow Monster (มนุษย์เงา)", "Alien (มนุษย์ต่างดาว)", "Human (มนุษย์ธรรมดา)", "Vampire-Werewolf Hybrid", "Zombie-Unicorn Hybrid", "Harpy-Centaur Hybrid", "Ghost-Mermaid Hybrid", "Centaur-Pegasus", "Centaur-Vampire", "Centaur-Phoenix", "Dragon-Human Hybrid", "Sea-Werewolf", "Gorgon-Ghost", "Mummy-Robot", "Zombie-Vampire", "Werecat-Banshee", "Ghost-Witch", "Robot-Yeti", "Gargoyle-Dragon", "Minotaur-Sphinx", "Harpy-Anubis", "Cyclops-Troll", "Ogre-Goblin", "Elf-Leprechaun", "Naga-Arachne", "Voodoo Doll-Shadow", "Plant-Slime Monster", "Alien-Fire Elemental", "Bee-Moth", "Kraken-Sea Monster", "Jackalope-Deer Spirit", "Krampus-Skeleton", "Selkie-Kappa", "Chupacabra-Werebear", "Drop Bear-Wererat", "Grim Reaper-Cupid", "Boogey Monster-Kitsune", "Wizard-Elf", "Automaton-Gargoyle", "Werewolf-Werecat", "Zombie-Skeleton", "Ghost-Shadow Monster", "Mummy-Anubis", "Sea Monster-Kraken", "Gorgon-Dragon", "Robot-Alien", "Yeti-Bigfoot", "Werebear-Wererat", "Dullahan-Grim Reaper", "Dragon-Centaur", "Genie-Witch", "Minotaur-Orc", "Harpy-Pegasus", "Cyclops-Ogre", "Troll-Gremlin", "Banshee-Ghost", "Boogey Monster-Shadow", "Skeleton-Calavera"];
+        const genderList = ["ผู้หญิง (Ghouls)", "ผู้ชาย (Mansters)", "Non-binary (นอนไบนารี)", "Genderfluid (เพศลื่นไหล)", "Agender (ไร้เพศ)", "Bigender (ทวิเพศ)", "Demigirl (เดมิเกิร์ล)", "Demiboy (เดมิบอย)", "Intersex (เพศกำกวม/สองเพศในร่างเดียว)", "Genderless (ไม่มีเพศสภาพ/สิ่งประดิษฐ์)", "Artificial (เพศประดิษฐ์)"
+];
+        const hairList = ["Blunt Bangs with Twin Pigtails (หน้าม้าเต่อกับผมแกละสองข้าง)",
+            "High Stiff Ponytail with Streak (โพนี่เทลสูงทรงแข็งพร้อมไฮไลท์)",
+            "Big Voluminous Werewolf Curls (ผมลอนสั้นพองฟู)",
+            "Straight Gold-Tinsel Bob (ผมบ๊อบสั้นสลวยผสมเส้นทอง)",
+            "Wavy Aqua with Flower Accents (ผมลอนสีน้ำทะเลประดับดอกไม้)",
+            "Short Rockabilly Victory Rolls (ผมย้อนยุควิกตอรี่โรล)",
+            "Shaved Side Undercut with Pattern (ผมไถข้างมีลวดลาย)",
+            "Floating Gradient Ghost Hair (ผมไล่สีปลิวไสวแบบผี)",
+            "Gorgon Snake Mohawk (โมฮอว์กงู)",
+            "Asymmetrical Jagged Cut (ผมตัดสั้นปลายแหลมไม่เท่ากัน)",
+            "Beehive Updo with Blunt Bangs (ผมเกล้าทรงรังนกหน้าม้าเต่อ)",
+            "Long Crimped Neon Hair (ผมลอนมาม่าสีนีออนยาว)",
+            "Ice-Spiked Shaggy Cut (ผมซอยสั้นทรงหนามน้ำแข็ง)",
+            "Space Buns with Undercut (ผมอาหมวยสองข้างไถท้ายทอย)",
+            "Mummy Wrap Headband with Long Straight (ผมยาวตรงพร้อมผ้าพันมัมมี่)",
+            // เพิ่มเติมตัวละครรองและ Mansters
+            "Cornrows with Jewelry (ผมเปียถักติดหนังหัวประดับจิวเวลรี่)",
+            "Asymmetrical Pastel Goth Wave (ผมลอนไล่สีพาสเทลตัดสั้นไม่เท่ากัน)",
+            "Flaming Hair Mane (ผมยาวทรงแผงคอสีเปลวเพลิง)",
+            "Retro Side Ponytail with Tinsel (โพนี่เทลข้างทรงย้อนยุคผสมเส้นทอง)",
+            "Shaggy Surf Hair (ผมซอยสั้นยุ่งๆ สไตล์ชาวเซิร์ฟ)",
+            "Intricate Braid with Ornament (ผมเปียถักซับซ้อนประดับประดา)",
+            "Punk Spiky Dreads (ผมเดรดร็อคทรงหนามพังก์)",
+            "Long Silver Strands (ผมยาวตรงสีเงินสลวย",
+            "Messy Top Knot (ผมเกล้าเป็นจุกยุ่งๆ ด้านบน)",
+            "Short Shaggy Cut (ผมซอยสั้นทรงยุ่งๆ)",
+            "Wavy Bob with Hair Accessory (ผมบ๊อบสั้นลอนพร้อมเครื่องประดับผม)",
+            "Low Side Ponytail with Side Bangs (โพนี่เทลต่ำข้างพร้อมผมม้าปัด)",
+            "Long Braids with Intricate Design (ผมเปียยาวถักด้วยลวดลายซับซ้อน)"
+];
+        const accList = ["Skullette Earring (ต่างหูรูปกะโหลกสคัลเล็ตต์)",
+            "Safety Pin Necklace (สร้อยคอเข็มกลัด)",
+            "Crescent Moon Choker (โช้กเกอร์พระจันทร์เสี้ยว)",
+            "Snake Wrap Bracelet (กำไลพันแขนรูปงู)",
+            "Flower Pearl Headband (ที่คาดผมดอกไม้และไข่มุก)",
+            "Horn-rimmed Glasses (แว่นตาทรงแคทอาย)",
+            "Chain & Shackle Belt (เข็มขัดโซ่และตรวน)",
+            "Coffin-shaped Backpack (กระเป๋าเป้ทรงโลงศพ)",
+            "Bat-wing Sunglasses (แว่นตากันแดดปีกค้างคาว)",
+            "Icy Fur Stole (ผ้าคลุมไหล่ขนสัตว์อาร์กติก)",
+            "Voodoo Doll Charm (พวงกุญแจตุ๊กตาวูดู)",
+            "Spiderweb Stockings (ถุงน่องลายหยากไย่)",
+            "Lightning Bolt Hair Clip (กิ๊บติดผมรูปสายฟ้า)",
+            "Pirate Eye Patch (ผ้าปิดตาโจรสลัด)",
+            "Pharaoh Gilded Collar (ปลอกคอทองคำฟาโรห์)",
+            "Clockwork Gear Jewelry (เครื่องประดับกลไกเฟือง)",
+            "Spiked Wrist Cuffs (กำไลข้อมือหนามหนา)",
+            // เพิ่มเติมเครื่องประดับเฉพาะและไอเทมจากไลน์พิเศษ
+            "Scorpion Choker (โช้กเกอร์รูปแมงป่อง - สไตล์)",
+            "Key Earring (ต่างหูรูปกุญแจ)",
+            "Bow Tie with Skull Detail (โบว์ไทประดับลายกะโหลก)",
+            "Lightning Earring Cluster (ต่างหูช่อสายฟ้าหลายชิ้น)",
+            "Pearl and Shell Necklace (สร้อยคอไข่มุกและเปลือกหอย)",
+            "Snake Spiky Earring (ต่างหูงูทรงหนาม)",
+            "Cat-ear Headband with Spikes (ที่คาดผมหูแมวทรงหนาม)",
+            "Glasses with Integrated Tech (แว่นตาพร้อมเทคโนโลยีในตัว)",
+            "Dragon-Scale Belt (เข็มขัดลายเกล็ดมังกร)",
+            "Skull Candy Earring (ต่างหูรูปขนมกะโหลก)",
+            "Spider-Wing Sunglasses (แว่นตากันแดดปีกแมงมุม)",
+            "Feather Boa Collar (ปลอกคอผ้าคลุมแผงคอขนนก)"
+];
+        const styleList = ["Freaky Chic (แฟชั่นสุดแปลกแต่ชิค)",
+            "Gore-geous (สวยสยองหยด)",
+            "Clawesome Punk (ร็อคพังก์สุดกรงเล็บ)",
+            "Voltageous (สวยช็อตไฟแรงสูง)",
+            "Scary Cool (เท่แบบน่ากลัว)",
+            "Fangs-tastic Goth (โกธิคสุดเขี้ยว)",
+            "Sea-chic Sporty (สปอร์ตตี้สาวชาวน้ำ)",
+            "Royal Mummy Elegance (หรูหราแบบราชวงศ์มัมมี่)",
+            "Zombie Geek (เนิร์ดซอมบี้)",
+            "Killer Style (สไตล์สวยประหาร)",
+            "Haunt Couture (แฟชั่นชั้นสูงแบบผีสิง)",
+            "Monstrously Hip (ฮิปสเตอร์แบบมอนสเตอร์)",
+            "Rockabilly Rebel (กบฏร็อคคาบิลลี่)",
+            "Electrified Neon (นีออนช็อตค้างคืน)",
+            // เพิ่มเติมสไตล์ตามไลน์พิเศษและธีมต่างๆ
+            "Glam Rock Streetwear (สตรีทแวร์แกลมร็อค)",
+            "Pastel Goth Haunt (ไล่สีพาสเทลโกธิค)",
+            "Steampunk Scares (สตีมพังก์สยองขวัญ)",
+            "Victorian Gothic Lolita (โกธิคโลลิต้าสไตล์วิคตอเรียน)",
+            "Dragon-inspired Regal (หรูหราสง่างามแบบมังกร)",
+            "Moss-Punk (พังก์สาวธรรมชาติเขียว)",
+            "Sporty Surf (สปอร์ตเซิร์ฟ)",
+            "Freak Du Chic Carnival (แฟชั่นคาร์นิวัลโรงละครสัตว์)",
+            "Dawn Of The Dance (แฟชั่นงานปาร์ตี้เต้นรำ)",
+            "Sweet Screams (แฟชั่นสไตล์ขนมหวาน)",
+            "Tech-Wear Monster (แฟชั่นแนวเทคสวมใส่ได้)",
+            "Day Of The Dead Folkloric (สตรีทแวร์สไตล์ชาวบ้านงานวันแห่งความตาย)"
+];
+        const colorDB = [{ name: "ชมพูแดรกคิวลอร่า", hex: "#FF66B2" }, { name: "ม่วงมลทินคลอดีน", hex: "#6A0DAD" }, { name: "ฟ้าแฟรงเกนสไตน์", hex: "#00FFFF" }, { name: "เขียวเน่าลากูน่า", hex: "#7FFFD4" }, { name: "ส้มเพลิงคลีโอ", hex: "#D4AF37" }, { name: "ดำมืดรัตติกาล", hex: "#1A1A1A" }, { name: "ขาวกะโหลกซีด", hex: "#F5F5F5" }, { name: "ชมพูบานเย็น", hex: "#FF00FF" }, { name: "ม่วงครามมืด", hex: "#4B0082" }, { name: "ส้มปะการัง", hex: "#FA8072" }, { name: "แดงเลือดแวมไพร์", hex: "#8B0000" }, { name: "แดงกุหลาบดำ", hex: "#4A0404" }, { name: "ม่วงอเมทิสต์", hex: "#800080" }, { name: "น้ำเงินยามวิกาล", hex: "#00008B" }, { name: "เทาศิลาการ์กอยล์", hex: "#708090" }, { name: "เงินเมทัลลิก", hex: "#C0C0C0" }, { name: "เขียวพรายน้ำ", hex: "#32CD32" }, { name: "เขียวอมฟ้าสาหร่าย", hex: "#008080" }, { name: "น้ำตาลขนหมาป่า", hex: "#8B5A2B" }, { name: "น้ำตาลช็อกโกแลต", hex: "#3E2723" }, { name: "ฟ้าอัญมณี", hex: "#00BFFF" }, { name: "ม่วงลาเวนเดอร์", hex: "#E6E6FA" }, { name: "ม่วงนีออน", hex: "#9D00FF" }, { name: "ชมพูนีออน", hex: "#FF1493" }, { name: "เหลืองอำพัน", hex: "#FFBF00" }, { name: "ทองแดงเก่า", hex: "#B87333" }, { name: "ขาวงาช้างโบราณ", hex: "#EAE6CA" }, { name: "เขียวมิ้นต์", hex: "#98FB98" }, { name: "เทาเมทัลลิกมืด", hex: "#2F4F4F" }, { name: "ส้มอิฐโกธิค", hex: "#A52A2A" }, { name: "ชมพูพีชสยอง", hex: "#FFDAB9" }, { name: "ม่วงพลัมเข้ม", hex: "#551A8B" }, { name: "น้ำเงินรอยัลบลู", hex: "#4169E1" }, { name: "เขียวมะนาวผีดิบ", hex: "#ADFF2F" }, { name: "เหลืองกำมะถัน", hex: "#FFFF00" }, { name: "แดงเบอร์กันดี", hex: "#800020" }, { name: "ฟ้าไอซ์บลู", hex: "#AFEEEE" }, { name: "ม่วงไลแลค", hex: "#C8A2C8" }, { name: "สีน้ำตาลเปลือกไม้", hex: "#5D4037" }, { name: "ส้มสนิม", hex: "#D2691E" }, { name: "ขาวไข่มุกผี", hex: "#F8F8FF" }, { name: "น้ำเงินนกยูง", hex: "#008080" }, { name: "ชมพูซากุระมืด", hex: "#FFB6C1" }, { name: "ม่วงกะโหลกไหม้", hex: "#4B0082" }, { name: "เขียวขี้ม้าเข้ม", hex: "#556B2F" }, { name: "เหลืองมัสตาร์ด", hex: "#DAA520" }, { name: "สีเทาหมอก", hex: "#D3D3D3" }, { name: "สีน้ำเงินเข้ม", hex: "#000080" }, { name: "สีแดงสนิม", hex: "#B22222" }, { name: "สีทองคำขาว", hex: "#F5F5DC" }
+];
+
+        function triggerMagic() {
+            const container = document.getElementById("magic-container");
+            const fade = document.getElementById("fade-screen");
+            container.innerHTML = "";
+            for (let i = 0; i < 6; i++) {
+                const beam = document.createElement("div");
+                beam.className = "magic-beam";
+                beam.style.setProperty('--rotation', `${i * 60}deg`);
+                beam.style.background = i % 2 === 0 ? "linear-gradient(to top, #ec4899, transparent)" : "linear-gradient(to top, #00ffff, transparent)";
+                beam.style.animation = "beamCollapse 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards";
+                container.appendChild(beam);
+            }
+
+            document.getElementById("res-fields").innerHTML = `
+                <div class="bg-purple-950/30 p-3.5 rounded-xl border border-purple-500/20 flex justify-between items-center"><span class="text-pink-400 font-bold">🧬 เผ่าพันธุ์:</span> <span class="text-white">${speciesList[Math.floor(Math.random() * speciesList.length)]}</span></div>
+                <div class="bg-purple-950/30 p-3.5 rounded-xl border border-purple-500/20 flex justify-between items-center"><span class="text-pink-400 font-bold">💀 เพศ:</span> <span class="text-white">${genderList[Math.floor(Math.random() * genderList.length)]}</span></div>
+                <div class="bg-purple-950/30 p-3.5 rounded-xl border border-purple-500/20 flex justify-between items-center"><span class="text-pink-400 font-bold">💈 ทรงผม:</span> <span class="text-white">${hairList[Math.floor(Math.random() * hairList.length)]}</span></div>
+                <div class="bg-purple-950/30 p-3.5 rounded-xl border border-purple-500/20 flex justify-between items-center"><span class="text-pink-400 font-bold">👗 สไตล์:</span> <span class="text-white">${styleList[Math.floor(Math.random() * styleList.length)]}</span></div>
+            `;
+
+            const accs = [...accList].sort(() => 0.5 - Math.random()).slice(0, 2);
+            document.getElementById("res-acc").innerHTML = accs.map(a => `• ${a}`).join("<br>");
+
+            const palette = [...colorDB].sort(() => 0.5 - Math.random()).slice(0, 5);
+            document.getElementById("res-palette-container").innerHTML = `
+                <span class="text-pink-400 font-bold block mb-3">🎨 พาเลทสีประจำตัว (5 สี):</span>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                    ${palette.map(c => `
+                        <div class="flex flex-col items-center p-2 bg-gray-950 rounded-lg border border-white/5">
+                            <div class="w-10 h-10 rounded-full border border-white/20 mb-1" style="background-color: ${c.hex}"></div>
+                            <span class="text-[10px] text-white font-bold truncate w-full text-center">${c.name}</span>
+                            <span class="text-[9px] text-pink-400 font-mono">${c.hex}</span>
+                        </div>`).join("")}
+                </div>
+            `;
+
+            setTimeout(() => {
+                fade.classList.add("opacity-100");
+                setTimeout(() => {
+                    document.getElementById("home-screen").classList.add("hidden");
+                    document.getElementById("result-screen").classList.remove("hidden");
+                    setTimeout(() => {
+                        document.getElementById("result-screen").classList.remove("opacity-0");
+                        fade.classList.remove("opacity-100");
+                    }, 100);
+                }, 500);
+            }, 500);
+        }
+
+        function backToHome() {
+            document.getElementById("result-screen").classList.add("hidden", "opacity-0");
+            document.getElementById("home-screen").classList.remove("hidden");
+        }
+    </script>
+</body>
+</html>
